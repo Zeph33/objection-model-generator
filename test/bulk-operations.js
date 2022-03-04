@@ -3,7 +3,7 @@ const fs = require('fs');
 const models = require('../src/dbToModel');
 const controllers = require('../src/dbToControllers');
 const routes = require('../src/dbToRoutes');
-const ObjectionModelGenerator = require('../lib/ObjectionModelGenerator');
+const ObjectionModelGenerator = require('../src/ObjectionModelGenerator');
 
 const main = async () => {
   const connection = {
@@ -13,7 +13,7 @@ const main = async () => {
     password: process.env.DB_PASS || ''
   };
   const modelsPromise = models(process.env.DB_NAME, connection, 'knex', './test/output/models/models.js');
-  const controllersPromise = controllers(process.env.DB_NAME, connection, '../models', 'abstract-controller', './test/output/controllers');
+  const controllersPromise = controllers(process.env.DB_NAME, connection, '../models', '../ApiController', './test/output/controllers');
   const routesPromise = routes(process.env.DB_NAME, connection, './test/output/routes/index.js');
   const all = await Promise.all([modelsPromise, controllersPromise, routesPromise]);
   console.log(all);

@@ -18,9 +18,13 @@
     "init": "npm i && npm run build && npm run doc",
     "start": "node main.js",
     "build": "babel -d lib src --source-maps && yarn doc",
-    "test": "nodemon -e .mustache,.js --ignore test,output/*,.vscode/* --exec babel-node test",
+    "bulk": "nodemon -e .mustache,.js --exec babel-node test/bulk-operations.js",
+    "test": "nodemon -e .mustache,.js --exec babel-node test",
     "test:one": "babel-node test",
     "doc": "jsdoc ./src -d documentation -c .jsdoc -r"
+  },
+  "nodemonConfig": {
+    "ignore": ["test/output/",".vscode/","node_modules/","output/"]
   },
   "bin": {},
   "dependencies": {

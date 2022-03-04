@@ -90,6 +90,7 @@ module.exports = async (dbName, dbConnection, modelsPath, controllerParent, path
     modelsPath
   });
   let tables = await TableModel.query().where('table_schema', '=', DB).eager('[columns.[constrain]]');
+  
   tables.forEach(table => {
     let modelName = singularize(table.TABLE_NAME);
     modelName = camelCase(modelName);

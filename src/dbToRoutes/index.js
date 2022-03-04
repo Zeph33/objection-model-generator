@@ -76,39 +76,62 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
     .replace(/[-_]([a-z0-9])/g, g => g[1].toUpperCase());
 
   let templateRoutes = fs.readFileSync(path.join(__dirname, 'templates/routesTemplate.mustache'), 'UTF-8');
-  let tables = await TableModel.query().where('table_schema', '=', DB).eager('[columns.[constrain]]');
-  let routes = [];
-  tables.forEach(table => {
+  let tableslist = await TableModel.query().where('table_schema', '=', DB).eager('[columns.[constrain]]');
+  let tables = [];
+  tableslist.forEach(table => {
     let name = slugging(table.TABLE_NAME);
     if (name.startsWith('-')) return;
     const nameSnake = pluralize.singular(capitalize(camelCase(name)));
-    let routesPerController = [
-      {
-        route: `GET /${name}`,
-        controller: `${nameSnake}.get`
-      },
-      {
-        route: `GET /${name}/:ID`,
-        controller: `${nameSnake}.getByID`
-      },
-      {
-        route: `POST /${name}`,
-        controller: `${nameSnake}.set`
-      },
-      {
-        route: `PATCH /${name}/:ID`,
-        controller: `${nameSnake}.update`
-      },
-      {
-        route: `DELETE /${name}/:ID`,
-        controller: `${nameSnake}.delete`
-      }
-    ]
-    routes.push(...routesPerController);
-  });
-  routes.sort((a, b) => (a.route < b.route ? -1 : (a.route > b.route ? 1 : 0)));
+    tables.push({
+      table: table.TABLE_NAME,
+      name,
+      types: [
+        {
+          type: 'get',
+          routes: [
+            {
+              route: `/${name}`,
+              controller: `${nameSnake}.get`
+            },
+            {
+              route: `/${name}/:ID`,
+              controller: `${nameSnake}.getByID`
+            },
+          ]
+        },
+        {
+          type: 'post',
+          routes: [
+            {
+              route: `/${name}`,
+              controller: `${nameSnake}.set`
+            },
+          ]
+        },
+        {
+          type: 'put',
+          routes: [
+            {
+              route: `/${name}/:ID`,
+              controller: `${nameSnake}.update`
+            },
+          ]
+        },
+        {
+          type: 'delete',
+          routes: [
+            {
+              route: `/${name}/:ID`,
+              controller: `${nameSnake}.delete`
+            },
+          ]
+        },
+      ],
+    })
+  })
+//  routes.sort((a, b) => (a.route < b.route ? -1 : (a.route > b.route ? 1 : 0)));
   let rendered = Mustache.render(templateRoutes, {
-    routes
+    tables
   });
   fs.writeFileSync(fileNameRoutes, rendered);
 }

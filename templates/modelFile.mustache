@@ -1,0 +1,60 @@
+/**
+ * {{tableName}} model
+ * @extends Model
+ */
+class {{modelName}} extends Model {
+
+  /**
+   * @override
+   */
+  static get tableName() {
+    return '{{tableName}}';
+  }
+
+  /**
+   * @override
+   */
+  static get jsonSchema() {
+    return {
+      type: 'object',
+      required: {{{requireds}}},
+      properties: {
+        {{#properties}}
+        {{name}}: {
+          type: {{{type}}},
+          {{#format}}
+          format: '{{format}}',
+          {{/format}}
+          {{#items}}
+          items: [{{{items}}}]
+          {{/items}}
+        },
+        {{/properties}}
+      }
+    }
+  }
+
+  /**
+   * @override
+   */
+  static get relationMappings() {
+    return {
+      {{#relations}}
+      {{name}}: {
+        relation: Model.HasOneRelation,
+        modelClass: {{targetModel}},
+        join: {
+          from: '{{tableName}}.{{column}}',
+          to: '{{targetTableName}}.{{targetColumn}}'
+        }
+      },
+      {{/relations}}
+    };
+  }
+
+  static get search() {
+    return {{{searches}}};
+  }
+}
+
+module.exports = {{modelName}}

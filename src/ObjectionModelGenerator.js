@@ -239,6 +239,93 @@ export default class ObjectionModelGenerator {
     models += Mustache.render(templateModel, classModelNames);
     return models;
   };
+  async createModelsFile(prefix) {
+    let {
+      dbName,
+      dbFile
+    } = this
+    let pt = path.join(__dirname, '../templates/')
+    let mht = path.join(pt, 'modelBase.mustache')
+    let mt = path.join(pt, 'modelFile.mustache')
+    let templateModelHeader = await fs.readFile(mht, 'UTF-8')
+    let templateModel = await fs.readFile(mt, 'UTF-8')
+
+    let header = Mustache.render(templateModelHeader, {
+      dbFile
+    })
+    let models = {}
+    TableModel.dbName = dbName
+    let cns = await KeyColumnUsage.query()
+      .whereNotNull('REFERENCED_COLUMN_NAME')
+      .andWhere('table_schema', '=', dbName)
+    let promiseTable = TableModel.query()
+      .where('table_schema', '=', dbName)
+    if (prefix) {
+      promiseTable = promiseTable
+        .andWhere('table_name', 'like', prefix + '%')
+    }
+    let tables = await promiseTable.eager('[columns]')
+
+
+    let classModelNames = {
+      classes: [],
+      dbFile
+    }
+    tables.forEach(async table => {
+      let modelName = singularize(table.TABLE_NAME)
+      modelName = camelCase(modelName)
+      modelName = capitalize(modelName)
+      let constrains = []
+      let requireds = []
+      let searches = []
+      let data = {
+        dbFile,
+        modelName: modelName,
+        tableName: table.TABLE_NAME,
+        properties: table.columns.map(column => {
+          constrains.push(...cns.filter(cn =>
+            table.TABLE_NAME === cn.TABLE_NAME
+            && column.COLUMN_NAME === cn.COLUMN_NAME))
+          if (column.IS_NULLABLE === 'NO' && !column.COLUMN_DEFAULT && column.COLUMN_NAME !== 'id') {
+            requireds.push(column.COLUMN_NAME)
+          }
+          const type = dataTypes(column)
+          const format = dataFormats(column)
+
+          if (type.includes('string') && searchFilter(column.COLUMN_NAME, column)) {
+            searches.push(column.COLUMN_NAME)
+          }
+          return {
+            name: column.COLUMN_NAME,
+            type: JSON.stringify(type),
+            format,
+            items: column.DATA_TYPE === 'enum' &&
+              column.COLUMN_TYPE.match(/enum\((.*)\)/)[1]
+          }
+        }),
+        requireds: JSON.stringify(requireds),
+        searches: JSON.stringify(searches),
+        relations: constrains.map(column => {
+          let referenced = singularize(column.REFERENCED_TABLE_NAME)
+          let targetTableName =
+            singularize(column.COLUMN_NAME.replace('_' + column.REFERENCED_COLUMN_NAME, ''))
+          if (referenced != targetTableName) targetTableName = targetTableName + '_' + referenced
+          targetTableName = camelCase(targetTableName)
+          referenced = camelCase(referenced)
+
+          return {
+            name: targetTableName,
+            column: column.COLUMN_NAME,
+            targetModel: capitalize(referenced) + 'Model',
+            targetTableName: column.REFERENCED_TABLE_NAME,
+            targetColumn: column.REFERENCED_COLUMN_NAME
+          }
+        })
+      }
+      models[modelName] = Mustache.render(templateModel, data)
+    })
+    return { header, models }
+  };
 
   get version() {
     return version;
