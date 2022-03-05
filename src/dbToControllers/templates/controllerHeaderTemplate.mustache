@@ -3,6 +3,8 @@
  * instead, extend from this.
  * @author Jonathan Diego Rodríguez Rdz. <jonathan@bquate.com>
  */
-
-const Controller = require('{{{controllerParent}}}');
-const models = require('{{{modelsPath}}}');
+module.exports = {
+{{#controllers}}
+  {{controller}}: require('./{{controller}}'),
+{{/controllers}}
+}

@@ -81,7 +81,8 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
   tableslist.forEach(table => {
     let name = slugging(table.TABLE_NAME);
     if (name.startsWith('-')) return;
-    const nameSnake = pluralize.singular(capitalize(camelCase(name)));
+    // const nameSnake = pluralize.singular(capitalize(camelCase(name)));
+    const controllerName = camelCase(name) + 'Controller';
     tables.push({
       table: table.TABLE_NAME,
       name,
@@ -91,11 +92,11 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
           routes: [
             {
               route: `/${name}`,
-              controller: `${nameSnake}.get`
+              controller: `${controllerName}.get`
             },
             {
               route: `/${name}/:ID`,
-              controller: `${nameSnake}.getByID`
+              controller: `${controllerName}.getByID`
             },
           ]
         },
@@ -104,7 +105,7 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
           routes: [
             {
               route: `/${name}`,
-              controller: `${nameSnake}.set`
+              controller: `${controllerName}.set`
             },
           ]
         },
@@ -113,7 +114,7 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
           routes: [
             {
               route: `/${name}/:ID`,
-              controller: `${nameSnake}.update`
+              controller: `${controllerName}.update`
             },
           ]
         },
@@ -122,7 +123,7 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
           routes: [
             {
               route: `/${name}/:ID`,
-              controller: `${nameSnake}.delete`
+              controller: `${controllerName}.delete`
             },
           ]
         },

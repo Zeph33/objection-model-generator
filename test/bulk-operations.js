@@ -13,8 +13,8 @@ const main = async () => {
     password: process.env.DB_PASS || ''
   };
   const modelsPromise = models(process.env.DB_NAME, connection, 'knex', './test/output/models/models.js');
-  const controllersPromise = controllers(process.env.DB_NAME, connection, '../models', '../ApiController', './test/output/controllers');
-  const routesPromise = routes(process.env.DB_NAME, connection, './test/output/routes/index.js');
+  const controllersPromise = controllers(process.env.DB_NAME, connection, '../models', './baseController', './test/output/controllers');
+  const routesPromise = routes(process.env.DB_NAME, connection, './test/output/routes/apiRoutes.js');
   const all = await Promise.all([modelsPromise, controllersPromise, routesPromise]);
   console.log(all);
   // using omg

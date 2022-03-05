@@ -4,16 +4,19 @@
  * @class
  * @extends Controller
  */
+const Controller = require('{{{controllerParent}}}')
+const models = require('{{{modelsPath}}}')
+
 class {{controller}} extends Controller {
 
   constructor() {
-    super(models.{{model}});
+    super(models.{{model}})
   }
 {{#rels}}
   getByID(req, res, next) {
-    super.getByID(req, res, next, models.UserModel.query().eager('[{{rels}}]'));
+    super.getByID(req, res, next, models.UserModel.query().eager('[{{rels}}]'))
   }
 {{/rels}}
 
 }
-module.exports = {{controller}};
+module.exports = {{controller}}
