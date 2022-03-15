@@ -71,6 +71,10 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
     // TODO: mejorar remplazo de caracteres, ver functions en dbl-components
     return words.join('-');
   };
+  const singularize = (word) => {
+    let words = word.toLowerCase().split(/[_\- ]/)
+    return words.map(w => pluralize.singular(w)).join('-')
+  }
   const capitalize = (word) => word.charAt(0).toUpperCase() + word.slice(1);
   const camelCase = (word) => word.toLowerCase()
     .replace(/[-_]([a-z0-9])/g, g => g[1].toUpperCase());
@@ -79,7 +83,7 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
   let tableslist = await TableModel.query().where('table_schema', '=', DB).eager('[columns.[constrain]]');
   let tables = [];
   tableslist.forEach(table => {
-    let name = slugging(table.TABLE_NAME);
+    let name = singularize(table.TABLE_NAME);
     if (name.startsWith('-')) return;
     // const nameSnake = pluralize.singular(capitalize(camelCase(name)));
     const controllerName = camelCase(name) + 'Controller';

@@ -18,9 +18,9 @@ const main = async () => {
   const all = await Promise.all([modelsPromise, controllersPromise, routesPromise]);
   console.log(all);
   // using omg
-  // let omg = new ObjectionModelGenerator(connection, process.env.DB_NAME, '../knex');
-  // let ms = await omg.createModels();
-  // fs.writeFileSync('./test/output/models/omg.js', ms);
+  let omg = new ObjectionModelGenerator(connection, process.env.DB_NAME, '../knex');
+  let ms = await omg.createModels();
+  fs.writeFileSync('./test/output/models/omg.js', ms);
   process.exit();
 }
 
