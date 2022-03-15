@@ -4,6 +4,8 @@
  * @author Didier Richard. <didier@kisslog.fr>
  */
 
+const ctrl = require('../controllers/objectionController')
+
 const routes = {
 {{#tables}}
 // Table {{table}}
@@ -11,7 +13,7 @@ const routes = {
 {{#types}}
     {{type}}: [
 {{#routes}}
-      { route: '{{{route}}}', controller: {{controller}} },
+      { route: '{{{route}}}', controller: ctrl.{{controller}} },
 {{/routes}}
     ],
 {{/types}}

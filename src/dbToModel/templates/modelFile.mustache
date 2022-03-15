@@ -15,7 +15,7 @@ class {{modelName}} extends Model {
    * @override
    */
   static get tableName() {
-    return '{{tableName}}';
+    return '{{tableName}}'
   }
 
   /**
@@ -56,11 +56,11 @@ class {{modelName}} extends Model {
         }
       },
       {{/relations}}
-    };
+    }
   }
 
   static get search() {
-    return {{{searches}}};
+    return {{{searches}}}
   }
 }
 
