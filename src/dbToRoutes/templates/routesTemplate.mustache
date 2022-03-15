@@ -13,7 +13,7 @@ const routes = {
 {{#types}}
     {{type}}: [
 {{#routes}}
-      { route: '{{{route}}}', controller: ctrl.{{controller}} },
+      { route: '{{{route}}}', controller: (req, res, next) => ctrl.{{controller}}(req, res, next) },
 {{/routes}}
     ],
 {{/types}}
