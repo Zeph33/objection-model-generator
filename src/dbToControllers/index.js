@@ -108,7 +108,7 @@ module.exports = async (dbName, dbConnection, modelsPath, controllerParent, path
     controllers.push({
       controller: modelName + 'Controller',
     })
-    fs.writeFileSync(`${pathControllers}/${modelName}Controller.js`, controller)
+    fs.writeFileSync(`${pathControllers}/objection/${modelName}Controller.js`, controller)
   })
 
   let pathHeader = path.join(__dirname, 'templates/controllerHeaderTemplate.mustache')

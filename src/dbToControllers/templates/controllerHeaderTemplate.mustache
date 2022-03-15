@@ -1,10 +1,11 @@
 /**
- * This file was generated with `node ./tools/dbToControllers`, don't modify, 
- * instead, extend from this.
+ * File generated with dbToControllers generator
  * @author Jonathan Diego Rodríguez Rdz. <jonathan@bquate.com>
+ * @author Didier Richard. <didier@kisslog.fr>
  */
+
 module.exports = {
 {{#controllers}}
-  {{controller}}: require('./{{controller}}'),
+  {{controller}}: require('./objection/{{controller}}'),
 {{/controllers}}
 }

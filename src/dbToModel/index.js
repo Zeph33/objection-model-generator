@@ -132,25 +132,25 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
     .replace(/[-_]([a-z0-9])/g, g => g[1].toUpperCase());
 
   let templateModelHeader = fs.readFileSync(path.join(__dirname, 'templates/modelHeaderTemplate.mustache'), 'UTF-8');
-  let templateModel = fs.readFileSync(path.join(__dirname, 'templates/modelTemplate.mustache'), 'UTF-8');
+  let templateModel = fs.readFileSync(path.join(__dirname, 'templates/modelFile.mustache'), 'UTF-8')
+  let templateModelBase = fs.readFileSync(path.join(__dirname, 'templates/modelBase.mustache'), 'UTF-8')
 
-  let models = Mustache.render(templateModelHeader, {
+  let modelsBase = Mustache.render(templateModelBase, {
     dbFile: knexInstance
-  });
+  })
+  fs.writeFileSync(outputModelFile + '/baseModel.js', modelsBase);
 
   let tables = await TableModel.query().where('table_schema', '=', DB).eager('[columns.[constrain]]');
-  let classModelNames = {
-    classes: []
-  };
+  let modelsName = [];  
   tables.forEach(table => {
     let modelName = singularize(table.TABLE_NAME);
-    modelName = camelCase(modelName);
-    modelName = capitalize(modelName);
+    modelName = camelCase(modelName) + 'Model';
+    // modelName = capitalize(modelName);
     let constrains = [];
     let requireds = [];
     let searches = [];
     let data = {
-      modelName: modelName + 'Model',
+      modelName: modelName,
       tableName: table.TABLE_NAME,
       properties: table.columns.map(column => {
         if (column.constrain) {
@@ -182,9 +182,13 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
         }
       })
     }
-    classModelNames.classes.push(data);
+    let models = Mustache.render(templateModel, data)
+    fs.writeFileSync(outputModelFile + '/objection/' + modelName + '.js', models);    
+    modelsName.push({
+      class: modelName,
+    })
   });
-  models += Mustache.render(templateModel, classModelNames);
-  fs.writeFileSync(outputModelFile, models);
+  let modelsHeader = Mustache.render(templateModelHeader, { modelsName });
+  fs.writeFileSync(outputModelFile + '/objectionsModels.js', modelsHeader);
   return true;
 }

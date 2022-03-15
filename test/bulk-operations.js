@@ -12,15 +12,15 @@ const main = async () => {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASS || ''
   };
-  const modelsPromise = models(process.env.DB_NAME, connection, 'knex', './test/output/models/models.js');
-  const controllersPromise = controllers(process.env.DB_NAME, connection, '../models', './baseController', './test/output/controllers');
+  const modelsPromise = models(process.env.DB_NAME, connection, '../db', './test/output/models');
+  const controllersPromise = controllers(process.env.DB_NAME, connection, '../../models/objectionsModels', '../baseController', './test/output/controllers');
   const routesPromise = routes(process.env.DB_NAME, connection, './test/output/routes/apiRoutes.js');
   const all = await Promise.all([modelsPromise, controllersPromise, routesPromise]);
   console.log(all);
   // using omg
-  let omg = new ObjectionModelGenerator(connection, process.env.DB_NAME, '../knex');
-  let ms = await omg.createModels();
-  fs.writeFileSync('./test/output/models/omg.js', ms);
+  // let omg = new ObjectionModelGenerator(connection, process.env.DB_NAME, '../knex');
+  // let ms = await omg.createModels();
+  // fs.writeFileSync('./test/output/models/omg.js', ms);
   process.exit();
 }
 
