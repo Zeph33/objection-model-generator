@@ -149,14 +149,31 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
     let constrains = [];
     let requireds = [];
     let searches = [];
+    let idList = table.columns.filter(col => {
+      return col.COLUMN_KEY == 'PRI'
+    })
+    if (idList.length == 0) {
+      idList = table.columns.filter(col => {
+        return col.COLUMN_KEY == 'UNI'
+      })
+    }
+    let idColumn = ''
+    if (idList.length == 1) {
+      idColumn = "'" + idList[0].COLUMN_NAME +"'"
+    } else if (idList.length > 1) {
+      idColumn = '[' + idList.reduce((list, col) => {
+        return list + "'" + col.COLUMN_NAME + "',"
+      }, '') + ']'
+    }
     let data = {
+      idColumn,
       modelName: modelName,
       tableName: table.TABLE_NAME,
       properties: table.columns.map(column => {
         if (column.constrain) {
           constrains.push(column.constrain);
         }
-        if (column.IS_NULLABLE === 'NO' && !column.COLUMN_DEFAULT && column.COLUMN_NAME !== 'id') {
+        if (column.IS_NULLABLE === 'NO' && !column.COLUMN_DEFAULT && column.COLUMN_NAME !== idColumn) {
           requireds.push(column.COLUMN_NAME);
         }
         let type = dataTypes(column.DATA_TYPE);

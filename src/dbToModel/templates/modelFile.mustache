@@ -21,6 +21,13 @@ class {{modelName}} extends Model {
   /**
    * @override
    */
+  static get idColumn() {
+    return {{{idColumn}}}
+  }
+
+  /**
+   * @override
+   */
   static get jsonSchema() {
     return {
       type: 'object',

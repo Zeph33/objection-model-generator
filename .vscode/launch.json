@@ -7,6 +7,19 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Debug bulk",
+      "program": "${workspaceFolder}/test/bulk-operations.js",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/babel-node",
+      "runtimeArgs": [
+        "--nolazy"
+      ],
+      "env": {
+        "BABEL_ENV": "development"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "omg",
       "preLaunchTask": "npm: build",
       "program": "${workspaceFolder}/main.js",
