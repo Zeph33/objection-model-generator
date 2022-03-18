@@ -5,7 +5,7 @@ const path = require('path');
 const Mustache = require('mustache');
 const pluralize = require('pluralize');
 
-module.exports = async (dbName, dbConnection, fileNameRoutes) => {
+module.exports = async (dbName, dbConnection, fileNameRoutes, activeField='status') => {
   const DB = dbName;
   // Initialize knex.
   const knex = Knex({
@@ -82,27 +82,26 @@ module.exports = async (dbName, dbConnection, fileNameRoutes) => {
   let templateRoutes = fs.readFileSync(path.join(__dirname, 'templates/routesTemplate.mustache'), 'UTF-8');
   let tableslist = await TableModel.query().where('table_schema', '=', DB).eager('[columns.[constrain]]');
   let tables = [];
+  activeField = activeField.toLowerCase()
   tableslist.forEach(table => {
     let name = singularize(table.TABLE_NAME);
     if (name.startsWith('-')) return;
     // const nameSnake = pluralize.singular(capitalize(camelCase(name)));
     const controllerName = camelCase(name) + 'Controller';
+    const routesGet = [{ route: `/${name}`, controller: `${controllerName}.get` }]
+    const columns = table.columns.map((c) => c.COLUMN_NAME.toLowerCase())
+    console.log(columns)
+    if (columns.includes(activeField)) {
+      routesGet.push({ route: `/${name}/active`, controller: `${controllerName}.getActive` })
+    }
+    routesGet.push({ route: `/${name}/:ID`, controller: `${controllerName}.getByID` })
     tables.push({
       table: table.TABLE_NAME,
       name,
       types: [
         {
           type: 'get',
-          routes: [
-            {
-              route: `/${name}`,
-              controller: `${controllerName}.get`
-            },
-            {
-              route: `/${name}/:ID`,
-              controller: `${controllerName}.getByID`
-            },
-          ]
+          routes: routesGet,
         },
         {
           type: 'post',

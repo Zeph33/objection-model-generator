@@ -14,7 +14,7 @@ const main = async () => {
   };
   const modelsPromise = models(process.env.DB_NAME, connection, '../db', './test/output/models');
   const controllersPromise = controllers(process.env.DB_NAME, connection, '../../models/objectionsModels', '../baseController', './test/output/controllers');
-  const routesPromise = routes(process.env.DB_NAME, connection, './test/output/routes/objectionRoutes.js');
+  const routesPromise = routes(process.env.DB_NAME, connection, './test/output/routes/objectionRoutes.js', 'autohide');
   const all = await Promise.all([modelsPromise, controllersPromise, routesPromise]);
   console.log(all);
   // using omg
