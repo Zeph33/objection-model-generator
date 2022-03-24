@@ -1,8 +1,8 @@
 // lib to convert "{'q.column':value}" to "{q:{column:value}}"
-const unflatten = require('flat').unflatten
+const unflatten = require('../utils/flat').unflatten
 
 /**
- * Model class which extends from ObjectionJS Model. 
+ * Model class which extends from ObjectionJS Model.
  * Instance generated using **`Model.query()`**
  * @typedef {Class} Model
  */
@@ -11,16 +11,15 @@ const unflatten = require('flat').unflatten
  * @class Controller
  * @abstract
  * @description All controllers must extends from this class.
- * @author Jonathan Diego Rodríguez Rdz. <jonathan@bquate.com>
  * @param {Class} Model - model class to use,
  * this param is required and must be an **ObjectionJS Model class**.
  * @param {string[]} [qcolumns=[]] - Query columns: array of column names
- * to use as the searchable columns, 
- * the Model must have **`Model.jsonSchema.search`** array 
- * but could be rewrited with this parameter 
+ * to use as the searchable columns,
+ * the Model must have **`Model.jsonSchema.search`** array
+ * but could be rewrited with this parameter
  * (the **`Model.jsonSchema.search`** its a custom variable).
  */
-class ApiController {
+class baseController {
 
   /**
    * Alias for the *this* object.
@@ -29,56 +28,72 @@ class ApiController {
    * @inner
    * @name c
    */
-  constructor(Model, qcolumns = []) {
+  constructor(Model, qcolumns) {
     let c = this
     c.Model = Model
-    c.qcolumns = (Model.jsonSchema || {}).search || qcolumns
+    c.qcolumns = qcolumns || Model.search || []
+    c.columns = c.Model.jsonSchema ? Object.keys(c.Model.jsonSchema.properties) : []
+    c.Model.fetchTableMetadata().then((res) => {
+      if (c.columns.length == 0) {
+        c.columns = res.columns
+      }
+    })
   }
 
   /**
-   * Make an Object to response with data array 
-   * which list the filtered rows by the searchable columns 
-   * using OR conditionals to retrieve the data with pagination 
+   * Make an Object to response with data array
+   * which list the filtered rows by the searchable columns
+   * using OR conditionals to retrieve the data with pagination
    * and total rows.
    * @param {Object} req - Request: The req object represents the HTTP request, its a *Express* parameter.
    * @param {Object} res - Response: The res object represents the HTTP response that an Express app sends when it gets an HTTP request.
    * @param {Function} next - Next: Express function to continue to the next middleware.
-   * @param {Model} [modelObject] - Model object: if it's necessary modify, filter or join data, 
-   * the child classes can set this parameter to modify the request using any Objection method, 
+   * @param {Model} [modelObject] - Model object: if it's necessary modify, filter or join data,
+   * the child classes can set this parameter to modify the request using any Objection method,
    * e.g. **`Model.query().eager(...)`**.
    * @param {boolean} [promise] - Let decide if the method respond as service or as promise
    */
   get(req, res, next, modelObject, promise) {
     let c = this
     req.query = unflatten(req.query)
-
     // pagination
     let limit = parseInt(req.query.limit || 20)
-    let offset = parseInt(req.query.offset || (req.query.page || 0) * req.query.limit)
-    let page = req.query.page || Math.trunc(offset / limit) || 0
+    let offset = limit == -1 ? parseInt(req.query.offset || 0) : parseInt(req.query.offset || (req.query.page || 0) * req.query.limit)
+    let page = limit == -1 ? 0 : req.query.page || Math.trunc(offset / limit) || 0
     // fields or columns to return by row
     let fieldsReq = typeof req.query.fields === 'string'
-    let queryByColumns = typeof req.query.filters === 'object'
+    let filters = typeof req.body.filters === 'object' ? req.body.filters : null
     let fields = new Set()
 
     if (fieldsReq) {
       fieldsReq = req.query.fields.split(',')
-      fieldsReq.forEach(f => fields.add(f.trim()))
+      fieldsReq.forEach(f => {
+        c.columns.includes(f.trim()) && fields.add(f.trim())
+      })
+
     }
 
-    if (queryByColumns) {
-      Object.keys(req.query.filters).forEach(f => fields.add(f))
+    if (filters) {
+      Object.keys(filters).forEach(f => {
+        c.columns.includes(f.trim()) && fields.add(f)
+      })
     }
 
-    if (req.query.q || !fieldsReq) {
+    if (req.query.q && !fieldsReq) {
       c.qcolumns.forEach(f => fields.add(f))
+    } else if (!fieldsReq) {
+      c.columns.forEach(f => fields.add(f))
     }
 
     if (!modelObject) {
       if (!fields.size) {
         fields.add('*')
       } else {
-        fields.add('id')
+        if (Array.isArray(c.Model.idColumn)) {
+          c.Model.idColumn().forEach((col) => fields.add(col))
+        } else {
+          fields.add(c.Model.idColumn)
+        }
       }
       let finalFields = Array.from(fields)
       modelObject = c.Model.query().select(finalFields)
@@ -91,47 +106,41 @@ class ApiController {
       let query = req.query.q
       let columns = c.qcolumns.slice(0)
       let firstColumn = columns.pop()
-      // ordering template
-      const locateOrder = `CASE WHEN {{column}} = '${query}' THEN 0  
-                             WHEN {{column}} LIKE '${query}%' THEN 1 
-                             ELSE 3
-                           END`
-      const regexColumn = /\{\{column\}\}/g
-      let order = [locateOrder.replace(regexColumn, firstColumn)]
-      // filter by *q* parametter
       modelObject.where(builder => {
         let pullSearch = builder.where(firstColumn, 'like', `%${query}%`)
         columns.map(column => {
           pullSearch.orWhere(column, 'like', `%${query}%`)
-          order.push(locateOrder.replace(regexColumn, column))
+          //        order.push(locateOrder.replace(regexColumn, column))
         })
       })
-      // set order string builded
-      modelObject.orderByRaw(order.join(', '))
     }
-
     // search by column
-    if (queryByColumns) {
+    if (filters) {
       modelObject.where(builder => {
-        Object.keys(req.query.filters).forEach(col => {
-          if (parseInt(req.query.filters[col])) {
-            builder.where(col, parseInt(req.query.filters[col]))
+        Object.keys(filters).forEach(col => {
+          if (parseInt(filters[col])) {
+            builder.where(col, parseInt(filters[col]))
           } else {
-            builder.where(col, 'like', '%' + req.query.filters[col] + '%')
+            builder.where(col, 'like', '%' + filters[col] + '%')
           }
         })
       })
     }
 
     //get data with pagination
-    let response = modelObject.page(page, limit)
-      .then(resp => ({
-        total: resp.total,
-        data: resp.results,
+    let response = (limit == -1 ?
+      (offset ? modelObject.offset(offset) : modelObject.execute())
+      : modelObject.page(page, limit)
+    ).then(resp => {
+      const data = {
+        total: resp.total || resp.length,
+        data: resp.results || resp,
         limit: limit,
         offset: offset || 0,
         page: page
-      }))
+      }
+      return data
+    })
     if (promise) {
       return response
     } else {
@@ -154,7 +163,7 @@ class ApiController {
     if (!modelObject) {
       modelObject = c.Model.query()
     }
-    let response = c.get(req, res, next, modelObject.where('status', true), true)
+    let response = c.get(req, res, next, modelObject.where('autohide', false).orWhereNull('autohide'), true)
     if (promise) {
       return response
     } else {
@@ -249,14 +258,15 @@ class ApiController {
       //clear any search
       //modelObject.clear(/.*/).clearSelect();
     }
+    const data = { ...req.body }
     let response = modelObject
-      .insertWithRelated(req.body)
+      .insertAndFetch(req.body)
     if (promise) {
       return response
     } else {
       response
         .then(resp => c.success(req, res, next, {
-          id: resp.id
+          data: resp
         }))
         .catch(resp => c.catch(res, resp))
     }
@@ -277,16 +287,14 @@ class ApiController {
       //clear any search
       //modelObject.clear(/.*/).clearSelect();
     }
-    req.body.id = parseInt(req.params.ID) || req.params.ID
+    const id = parseInt(req.params.ID) || req.params.ID
     let response = modelObject
-      .upsertGraph(req.body)
+      .patchAndFetchById(id, req.body)
     if (promise) {
       return response
     } else {
       response
-        .then(resp => c.success(req, res, next, {
-          id: resp.id
-        }))
+        .then(resp => c.success(req, res, next, { data: resp }))
         .catch(resp => c.catch(res, resp))
     }
   }
@@ -321,8 +329,8 @@ class ApiController {
    * This method is not really protected but the idea is use only by the children, if everything is ok, the data pass by this method and is filtered by the permission function
    * @protected
    * @param {Object} req - Express
-   * @param {Object} res - Express 
-   * @param {Function} next - Express 
+   * @param {Object} res - Express
+   * @param {Function} next - Express
    * @param {Object} resp - Data response
    * @param {Number} [status=200] - The status code with which will respond the request
    */
@@ -354,7 +362,7 @@ class ApiController {
    * This method is not really protected but the idea is use only by children, if any error is thrown this function catch it
    * @protected
    * @param {Object} res - Response: From Express
-   * @param {Object} resp - Error data response 
+   * @param {Object} resp - Error data response
    * @param {Number} [status=500] - The status code with which will respond the request
    */
   catch(res, resp, status = 500) {
@@ -380,4 +388,4 @@ class ApiController {
 
 }
 
-module.exports = ApiController
+module.exports = baseController

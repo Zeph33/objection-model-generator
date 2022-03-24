@@ -11,12 +11,6 @@ const knex = require('{{{dbFile}}}')
 {{/dbFile}}
 
 class Model extends ObjectionModel {
-  $trim = []
-  $formatDatabaseJson(json) {
-    json = super.$formatDatabaseJson(json)
-    Object.keys(json).forEach(e => json[e] = (this.$trim.includes(e) ? json[e].trim() : json[e]))
-    return json
-  }
   static tableName = ''
   static createValidator() {
     return new AjvValidator({

@@ -31,11 +31,14 @@ class {{modelName}} extends Model {
   static get jsonSchema() {
     return {
       type: 'object',
-      required: [{{#requireds}}'{{.}}',{{/requireds}}],
+      required: [{{#requireds}}'{{.}}', {{/requireds}}],
       properties: {
         {{#properties}}
         {{name}}: {
-          type: '{{{type}}}',
+          type: {{{type}}},
+          {{#enum}}
+          enum: [{{{enum}}}],
+          {{/enum}}
           {{#format}}
           format: '{{format}}',
           {{/format}}
@@ -67,7 +70,7 @@ class {{modelName}} extends Model {
   }
 
   static get search() {
-    return [{{#searches}}'{{.}}',{{/searches}}]
+    return [{{#searches}}'{{.}}', {{/searches}}]
   }
 }
 

@@ -92,6 +92,7 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
       case 'text':
       case 'mediumtext':
       case 'char':
+      case 'enum':
         return 'string';
       case 'date':
         return 'date';
@@ -101,8 +102,9 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
       case 'int':
       case 'tinyint':
       case 'smallint':
-      case 'timestamp':
         return 'integer';
+      case 'timestamp':
+        return 'timestamp';
       case 'decimal':
       case 'double':
       case 'float':
@@ -173,17 +175,30 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
         if (column.constrain) {
           constrains.push(column.constrain);
         }
-        if (column.IS_NULLABLE === 'NO' && !column.COLUMN_DEFAULT && column.COLUMN_NAME !== idColumn) {
+        if (column.EXTRA === 'auto_increment') {
+          column.IS_NULLABLE = 'YES'
+        }
+        if (column.IS_NULLABLE === 'NO' && !column.COLUMN_DEFAULT ) {
           requireds.push(column.COLUMN_NAME);
         }
         let type = dataTypes(column.DATA_TYPE);
+        let format = null
         if (type === 'string' && searchFilter(column.COLUMN_NAME)) {
           searches.push(column.COLUMN_NAME);
         }
-        return {
-          name: column.COLUMN_NAME,
-          type: type
+        if (type === 'date' || type === 'date-time') {
+          format = type
+          type = 'string'
         }
+        let coldef = {
+          name: column.COLUMN_NAME,
+          type: column.IS_NULLABLE === 'NO' ? `'${type}'` : `['${type}', 'null']`,
+          format,
+          enum: column.DATA_TYPE === 'enum' ? column.COLUMN_TYPE.substring(5, column.COLUMN_TYPE.length -1) : null
+        }
+        // if (format) coldef.format = format
+        // if (column.DATA_TYPE === 'enum') coldef.enum = column.TYPE
+        return coldef
       }),
       requireds,
       searches,
