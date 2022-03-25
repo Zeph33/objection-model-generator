@@ -25,6 +25,10 @@ class {{modelName}} extends Model {
     return {{{idColumn}}}
   }
 
+  static get dateColumns() {
+    return [{{#dateColumns}}'{{.}}', {{/dateColumns}}]
+  }
+
   /**
    * @override
    */

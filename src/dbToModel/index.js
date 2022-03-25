@@ -151,6 +151,7 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
     let constrains = [];
     let requireds = [];
     let searches = [];
+    let dateColumns = [];
     let idList = table.columns.filter(col => {
       return col.COLUMN_KEY == 'PRI'
     })
@@ -187,6 +188,7 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
           searches.push(column.COLUMN_NAME);
         }
         if (type === 'date' || type === 'date-time') {
+          if (type === 'date') dateColumns.push(column.COLUMN_NAME)
           format = type
           type = 'string'
         }
@@ -202,6 +204,7 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
       }),
       requireds,
       searches,
+      dateColumns,
       relations: constrains.map(column => {
         let targetTableName = singularize(column.REFERENCED_TABLE_NAME);
         targetTableName = camelCase(targetTableName);
