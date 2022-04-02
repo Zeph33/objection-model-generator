@@ -87,6 +87,23 @@ module.exports = async (dbName, dbConnection, fileNameRoutes, activeField='statu
     let name = singularize(table.TABLE_NAME);
     if (name.startsWith('-')) return;
     // const nameSnake = pluralize.singular(capitalize(camelCase(name)));
+    let idList = table.columns.filter(col => {
+      return col.COLUMN_KEY == 'PRI'
+    })
+    if (idList.length == 0) {
+      idList = table.columns.filter(col => {
+        return col.COLUMN_KEY == 'UNI'
+      })
+    }
+    let idRoute = false
+    if (idList.length == 1) {
+      idRoute = '/:ID'
+    } else if (idList.length > 1) {
+      idRoute = idList.reduce((list, col, idx) => {
+        return list + "/:ID" + (idx==0 ? '' : idx)
+      }, '')
+    }
+    
     const controllerName = camelCase(name) + 'Controller';
     const routesGet = [{ route: `/${name}`, controller: `${controllerName}.get` }]
     const columns = table.columns.map((c) => c.COLUMN_NAME.toLowerCase())
@@ -94,43 +111,46 @@ module.exports = async (dbName, dbConnection, fileNameRoutes, activeField='statu
     if (columns.includes(activeField)) {
       routesGet.push({ route: `/${name}/active`, controller: `${controllerName}.getActive` })
     }
-    routesGet.push({ route: `/${name}/:ID`, controller: `${controllerName}.getByID` })
+    idRoute && routesGet.push({ route: `/${name}${idRoute}`, controller: `${controllerName}.getByID` })
+    const types = [
+      {
+        type: 'get',
+        routes: routesGet,
+      }
+    ]
+    idRoute && types.push(
+      {
+        type: 'post',
+        routes: [
+          {
+            route: `/${name}`,
+            controller: `${controllerName}.set`
+          },
+        ]
+      },      
+      {
+        type: 'put',
+        routes: [
+          {
+            route: `/${name}${idRoute}`,
+            controller: `${controllerName}.update`
+          },
+        ]
+      },
+      {
+        type: 'delete',
+        routes: [
+          {
+            route: `/${name}${idRoute}`,
+            controller: `${controllerName}.delete`
+          },
+        ]
+      }
+    )
     tables.push({
       table: table.TABLE_NAME,
       name,
-      types: [
-        {
-          type: 'get',
-          routes: routesGet,
-        },
-        {
-          type: 'post',
-          routes: [
-            {
-              route: `/${name}`,
-              controller: `${controllerName}.set`
-            },
-          ]
-        },
-        {
-          type: 'put',
-          routes: [
-            {
-              route: `/${name}/:ID`,
-              controller: `${controllerName}.update`
-            },
-          ]
-        },
-        {
-          type: 'delete',
-          routes: [
-            {
-              route: `/${name}/:ID`,
-              controller: `${controllerName}.delete`
-            },
-          ]
-        },
-      ],
+      types
     })
   })
 //  routes.sort((a, b) => (a.route < b.route ? -1 : (a.route > b.route ? 1 : 0)));

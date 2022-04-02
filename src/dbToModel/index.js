@@ -167,6 +167,8 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
       idColumn = '[' + idList.reduce((list, col) => {
         return list + "'" + col.COLUMN_NAME + "',"
       }, '') + ']'
+    } else { // TODO : add a default id for view ...
+      idColumn = "'" + table.columns[0].COLUMN_NAME + "'"
     }
     let data = {
       idColumn,
