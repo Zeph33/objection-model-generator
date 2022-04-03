@@ -5,7 +5,7 @@ const path = require('path');
 const Mustache = require('mustache');
 const pluralize = require('pluralize');
 
-module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => {
+module.exports = async (dbName, dbConnection, knexInstance, outputModelFile, pkTableForce={}) => {
   const DB = dbName;
   // Initialize knex.
   const knex = Knex({
@@ -167,8 +167,18 @@ module.exports = async (dbName, dbConnection, knexInstance, outputModelFile) => 
       idColumn = '[' + idList.reduce((list, col) => {
         return list + "'" + col.COLUMN_NAME + "',"
       }, '') + ']'
-    } else { // TODO : add a default id for view ...
-      idColumn = "'" + table.columns[0].COLUMN_NAME + "'"
+    } else { // TODO : add a default id for view ... first integer column not nullable
+      const colId = table.columns.find((c) => c.IS_NULLABLE === 'NO' && c.DATA_TYPE === 'int')
+      colId && (idColumn = "'" + colId.COLUMN_NAME + "'")
+    }
+    if (pkTableForce.hasOwnProperty(table.TABLE_NAME)) {
+      if (Array.isArray(pkTableForce[table.TABLE_NAME])) {
+        idColumn = '[' + pkTableForce[table.TABLE_NAME].reduce((list, col) => {
+          return list + "'" + col + "',"
+        }, '') + ']'
+      } else {
+        idColumn = "'"+pkTableForce[table.TABLE_NAME]+"'"
+      }
     }
     let data = {
       idColumn,

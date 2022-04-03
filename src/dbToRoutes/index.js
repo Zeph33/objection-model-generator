@@ -5,7 +5,7 @@ const path = require('path');
 const Mustache = require('mustache');
 const pluralize = require('pluralize');
 
-module.exports = async (dbName, dbConnection, fileNameRoutes, activeField='status') => {
+module.exports = async (dbName, dbConnection, fileNameRoutes, activeField = 'status', pkTableForce={}) => {
   const DB = dbName;
   // Initialize knex.
   const knex = Knex({
@@ -95,6 +95,11 @@ module.exports = async (dbName, dbConnection, fileNameRoutes, activeField='statu
         return col.COLUMN_KEY == 'UNI'
       })
     }
+    let typeView = idList.length == 0
+
+    if (pkTableForce.hasOwnProperty(table.TABLE_NAME)) {
+      idList = Array.isArray(pkTableForce[table.TABLE_NAME])  ? pkTableForce[table.TABLE_NAME] : [pkTableForce[table.TABLE_NAME]];
+    }
     let idRoute = false
     if (idList.length == 1) {
       idRoute = '/:ID'
@@ -103,7 +108,7 @@ module.exports = async (dbName, dbConnection, fileNameRoutes, activeField='statu
         return list + "/:ID" + (idx==0 ? '' : idx)
       }, '')
     }
-    
+
     const controllerName = camelCase(name) + 'Controller';
     const routesGet = [{ route: `/${name}`, controller: `${controllerName}.get` }]
     const columns = table.columns.map((c) => c.COLUMN_NAME.toLowerCase())
@@ -118,7 +123,7 @@ module.exports = async (dbName, dbConnection, fileNameRoutes, activeField='statu
         routes: routesGet,
       }
     ]
-    idRoute && types.push(
+    idRoute && !typeView && types.push(
       {
         type: 'post',
         routes: [
