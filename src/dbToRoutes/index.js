@@ -105,7 +105,7 @@ module.exports = async (dbName, dbConnection, fileNameRoutes, activeField = 'sta
       idRoute = '/:ID'
     } else if (idList.length > 1) {
       idRoute = idList.reduce((list, col, idx) => {
-        return list + "/:ID" + (idx==0 ? '' : idx)
+        return list + "/:ID" + (idx==0 ? '' : idx+1)
       }, '')
     }
 
